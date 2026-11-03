@@ -23,6 +23,32 @@ public class Board {
         squares[position.file()][position.rank()] = piece;
     }
 
+    public void apply(Move move) {
+        place(move.from(), null);
+
+        Piece pieceToPlace = move.isPromotion()
+                ? createPromoted(move.promotesTo(), move.moved().color())
+                : move.moved();
+
+        place(move.to(), pieceToPlace);
+    }
+
+    public void undo(Move move) {
+        place(move.from(), move.moved());
+        place(move.to(), move.captured());
+    }
+
+    private Piece createPromoted(PieceType type, Color color) {
+        return switch (type) {
+            case QUEEN -> new Queen(color);
+            case ROOK -> new Rook(color);
+            case BISHOP -> new Bishop(color);
+            case KNIGHT -> new Knight(color);
+            default -> throw new IllegalArgumentException(
+                    "Invalid promotion piece: " + type);
+        };
+    }
+
     public List<Position> positionsOf(Color color) {
         List<Position> positions = new ArrayList<>();
 
