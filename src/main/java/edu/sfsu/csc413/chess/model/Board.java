@@ -65,6 +65,18 @@ public class Board {
         return positions;
     }
 
+    public Position kingPosition(Color color) {
+        for (Position position : positionsOf(color)) {
+            Piece piece = pieceAt(position);
+
+            if (piece != null && piece.type() == PieceType.KING) {
+                return position;
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();

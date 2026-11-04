@@ -36,13 +36,25 @@ public final class MoveGenerator {
     /**
      * Every move {@code color} may legally play in the given position.
      *
-     * <p>At M4 this is {@link #pseudoLegalMoves} unfiltered: the right colour
-     * and the right geometry. M5 adds the one global rule, king safety, here
-     * and only here. {@code Game.legalMoves()} calls this and does not change
-     * when it tightens.
+     * <p>At M5 this filters pseudo-legal moves so that a move is kept only if
+     * it does not leave that side's own king in check.
      */
     public static List<Move> legalMoves(Board board, Color color) {
-        return pseudoLegalMoves(board, color);
+        List<Move> legalMoves = new ArrayList<>();
+
+        for (Move move : pseudoLegalMoves(board, color)) {
+            board.apply(move);
+
+            boolean kingIsSafe = !isInCheck(board, color);
+
+            board.undo(move);
+
+            if (kingIsSafe) {
+                legalMoves.add(move);
+            }
+        }
+
+        return legalMoves;
     }
 
     /**
@@ -65,5 +77,41 @@ public final class MoveGenerator {
         }
 
         return moves;
+    }
+
+    /**
+     * Returns whether {@code target} is attacked by any piece of
+     * {@code attacker}.
+     */
+    public static boolean isAttacked(
+            Board board,
+            Position target,
+            Color attacker) {
+
+        for (Position position : board.positionsOf(attacker)) {
+            Piece piece = board.pieceAt(position);
+
+            if (piece.attacks(board, position, target)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns whether {@code color}'s king is currently in check.
+     */
+    public static boolean isInCheck(Board board, Color color) {
+        Position kingPosition = board.kingPosition(color);
+
+        if (kingPosition == null) {
+            return false;
+        }
+
+        return isAttacked(
+                board,
+                kingPosition,
+                color.opposite());
     }
 }
