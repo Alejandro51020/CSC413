@@ -1,6 +1,12 @@
 package edu.sfsu.csc413.chess.view;
 
 import edu.sfsu.csc413.chess.engine.Game;
+import edu.sfsu.csc413.chess.engine.GameStatus;
+import edu.sfsu.csc413.chess.model.Move;
+import edu.sfsu.csc413.chess.model.PieceType;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Connects the player's decisions to the game: carry out what was asked, then
@@ -19,6 +25,7 @@ public class GameController {
 
     private final Game game;
     private final BoardView view;
+    private boolean stopped;
 
     public GameController(Game game, BoardView view) {
         this.game = game;
@@ -35,28 +42,97 @@ public class GameController {
      * view with {@link BoardView#start}.
      */
     public void start() {
-        throw new UnsupportedOperationException("M6: implement GameController.start");
+        view.showMessage("Welcome to CSC 413 Chess.");
+        view.render(game);
+        view.start(this);
     }
 
     /**
      * The ask-and-handle loop, for views that can wait for input.
      *
      * <p>Asks the view for the next action and handles it, until the player
-     * quits or the game is over. A console view calls this from its
-     * {@code start}; an event-driven view never calls it.
+     * quits or the game is over.
      */
     public void runLoop() {
-        throw new UnsupportedOperationException("M6: implement GameController.runLoop");
+        while (!stopped && !game.isGameOver()) {
+            PlayerAction action = view.nextAction(game);
+            handle(action);
+        }
     }
 
     /**
      * Carries out one player action and redraws.
-     *
-     * <p>Every route into the game goes through here: {@link #runLoop()} calls
-     * it, and so will a button's click handler in M7. The handout lists what
-     * each of the four actions does and what the player is told.
      */
     public void handle(PlayerAction action) {
-        throw new UnsupportedOperationException("M6: implement GameController.handle");
+        switch (action) {
+            case PlayerAction.Move move -> play(move);
+            case PlayerAction.Undo ignored -> takeBack();
+            case PlayerAction.ShowMoves ignored -> showLegal();
+            case PlayerAction.Quit ignored -> {
+                stopped = true;
+                view.showMessage("Goodbye.");
+                view.close();
+                return;
+            }
+        }
+
+        view.render(game);
+
+        if (game.isGameOver()) {
+            announceResult();
+            view.close();
+        }
+    }
+
+    private void play(PlayerAction.Move action) {
+        String notation = action.notation();
+
+        Optional<Move> move = game.findLegalMove(notation);
+
+        if (move.isEmpty() && notation.length() == 4) {
+            PieceType promotion = view.promotionChoice(game);
+
+            String promotionNotation =
+                    notation + Character.toLowerCase(promotion.symbol());
+
+            move = game.findLegalMove(promotionNotation);
+        }
+
+        if (move.isPresent()) {
+            game.play(move.get());
+        } else {
+            view.showMessage(
+                    "Not a legal move: '" + notation + "'.");
+        }
+    }
+
+    private void takeBack() {
+        if (game.undoLastMove().isEmpty()) {
+            view.showMessage("Nothing to undo.");
+        }
+    }
+
+    private void showLegal() {
+        List<String> legal = game.legalMoves().stream()
+                .map(Move::toString)
+                .sorted()
+                .toList();
+
+        view.showMessage(
+                legal.size()
+                        + " legal moves: "
+                        + String.join(" ", legal));
+    }
+
+    private void announceResult() {
+        if (game.status() == GameStatus.CHECKMATE) {
+            view.showMessage(
+                    "Checkmate. "
+                            + game.sideToMove().opposite()
+                            + " wins.");
+        } else if (game.status() == GameStatus.STALEMATE) {
+            view.showMessage(
+                    "Stalemate. The game is a draw.");
+        }
     }
 }

@@ -42,6 +42,14 @@ public class Game {
         return MoveGenerator.legalMoves(board, sideToMove);
     }
 
+    public GameStatus status() {
+        return MoveGenerator.status(board, sideToMove);
+    }
+
+    public boolean isGameOver() {
+        return status().isGameOver();
+    }
+
     public Optional<Move> findLegalMove(String notation) {
         for (Move move : legalMoves()) {
             if (move.toString().equalsIgnoreCase(notation)) {

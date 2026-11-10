@@ -10,23 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Generates the moves a side may play in a given position.
- *
- * <p>This class exists because of a question no single piece can answer. A
- * piece knows how it moves; it does not know the rule that applies to every
- * piece at once: <strong>you may not leave your own king attacked.</strong>
- * That rule needs the whole board, and it arrives in M5. This week the class
- * is where the generation loop lives, moved out of {@code Game}, so that when
- * the rule arrives it has a home.
- *
- * <p>Notice what this class is not. It holds no state: no board, no side to
- * move, no history. Everything it needs arrives as a parameter, so its methods
- * are {@code static} and it cannot be instantiated. Ask it the same question
- * about the same board twice and you get the same answer.
- *
- * <p>Nothing outside the {@code engine} package needs this class. The view and
- * {@code Main} talk to {@link Game}, which decides what "legal" means. That is
- * why one of the two methods below has no access modifier.
+ * Generates moves and determines the status of a chess position.
  */
 public final class MoveGenerator {
 
@@ -36,8 +20,8 @@ public final class MoveGenerator {
     /**
      * Every move {@code color} may legally play in the given position.
      *
-     * <p>At M5 this filters pseudo-legal moves so that a move is kept only if
-     * it does not leave that side's own king in check.
+     * <p>A move is legal only if it does not leave that side's own king
+     * in check.
      */
     public static List<Move> legalMoves(Board board, Color color) {
         List<Move> legalMoves = new ArrayList<>();
@@ -59,14 +43,6 @@ public final class MoveGenerator {
 
     /**
      * Every geometrically possible move for {@code color}, king safety aside.
-     *
-     * <p>This is the loop from session 6 §3 and M3's {@code Game.legalMoves()},
-     * moved here unchanged. Note how little it knows: it never asks what kind
-     * of piece it is looking at. It asks each piece for its own moves.
-     *
-     * <p>Package-private on purpose. Only {@code Game} and this class's tests,
-     * both in {@code engine}, may call it. A view that wants the moves asks
-     * {@code Game}.
      */
     static List<Move> pseudoLegalMoves(Board board, Color color) {
         List<Move> moves = new ArrayList<>();
@@ -113,5 +89,27 @@ public final class MoveGenerator {
                 board,
                 kingPosition,
                 color.opposite());
+    }
+
+    /**
+     * Returns the current status for the side whose turn it is.
+     */
+    public static GameStatus status(Board board, Color sideToMove) {
+        boolean inCheck = isInCheck(board, sideToMove);
+        boolean hasLegalMove = !legalMoves(board, sideToMove).isEmpty();
+
+        if (inCheck && !hasLegalMove) {
+            return GameStatus.CHECKMATE;
+        }
+
+        if (!inCheck && !hasLegalMove) {
+            return GameStatus.STALEMATE;
+        }
+
+        if (inCheck) {
+            return GameStatus.CHECK;
+        }
+
+        return GameStatus.IN_PROGRESS;
     }
 }

@@ -1,15 +1,31 @@
 package edu.sfsu.csc413.chess;
 
+import edu.sfsu.csc413.chess.engine.Game;
+import edu.sfsu.csc413.chess.view.BoardView;
+import edu.sfsu.csc413.chess.view.ConsoleView;
+import edu.sfsu.csc413.chess.view.EmojiView;
+import edu.sfsu.csc413.chess.view.GameController;
+
 /**
- * Entry point.
- *
- * <p>At M0 this does nothing but prove the toolchain works. It grows into the
- * real launcher as the engine appears underneath it.
+ * Entry point for the chess application.
  */
 public final class Main {
 
     public static void main(String[] args) {
-        System.out.println("CSC 413 Chess — environment OK.");
+        Game game = new Game();
+
+        BoardView view;
+
+        if (args.length > 0 && args[0].equalsIgnoreCase("emoji")) {
+            view = new EmojiView();
+        } else {
+            view = new ConsoleView();
+        }
+
+        GameController controller =
+                new GameController(game, view);
+
+        controller.start();
     }
 
     private Main() {
